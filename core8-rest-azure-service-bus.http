@@ -1,0 +1,6 @@
+@core8_rest_azure_service_bus_HostAddress = http://localhost:5150
+
+GET {{core8_rest_azure_service_bus_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
