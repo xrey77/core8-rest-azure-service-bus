@@ -1,5 +1,6 @@
 using System;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using core8_rest_azure_service_bus.dto;
 using core8_rest_azure_service_bus.Helpers;
 using core8_rest_azure_service_bus.Services;
@@ -11,6 +12,7 @@ using SixLabors.ImageSharp;
 
 namespace core8_rest_azure_service_bus.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("[controller]")]
     public class UploadProfilePicController : ControllerBase

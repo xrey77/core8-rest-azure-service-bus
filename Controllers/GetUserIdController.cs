@@ -1,12 +1,15 @@
+// Controllers/GetUseridController.cs
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using core8_rest_azure_service_bus.Services;
 using core8_rest_azure_service_bus.Models;
 using core8_rest_azure_service_bus.Helpers;
 
 namespace core8_rest_azure_service_bus.Controllers
 {
+    [Authorize]
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class GetUserIdController: ControllerBase {
 
         private readonly IUserService userService;
@@ -18,7 +21,7 @@ namespace core8_rest_azure_service_bus.Controllers
 
         }
 
-        [HttpGet("/getuserbyid/{id}")]
+        [HttpGet("{id}")]
         public async Task<IActionResult> GetUserId(int id) {
             try {
                 var user =  await userService.GetUserId(id);

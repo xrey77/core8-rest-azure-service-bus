@@ -1,100 +1,98 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.SqlClient;
-using System.Data;
-using core8_rest_azure_service_bus.Services;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using System;
-using System.IO;
+// Program.cs
+using Azure.Identity;
+using Microsoft.Extensions.Azure;
+using Azure.Messaging.ServiceBus;
 
+using core8_rest_azure_service_bus.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IMfaService, MfaService>();
+// 3. Register your custom publisher (ensure this comes AFTER the client registration)
+builder.Services.AddSingleton<IMessagePublisher, ServiceBusPublisher>();
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddAuthorization();
-builder.Services.AddCors(options =>
+
+// 1. Register Services via Extension Methods
+builder.Services.AddApplicationServices(builder.Configuration);
+builder.Services.AddCustomCors();
+builder.Services.AddCustomAuthentication(builder.Configuration);
+
+// var options = new ServiceBusClientOptions
+// {
+//     TransportType = ServiceBusTransportType.AmqpWebSockets
+// };
+
+// string connectionString = builder.Configuration.GetConnectionString("AzureServiceBus")
+//                 ?? throw new ArgumentNullException(nameof(builder.Configuration), "Central topic name is missing.");
+
+// var client = new ServiceBusClient(connectionString, options);
+
+
+string connectionString = builder.Configuration.GetConnectionString("AzureServiceBus") 
+    ?? throw new ArgumentNullException(nameof(builder.Configuration), "Unable to connect to AzureServiceBus.");
+    // ?? builder.Configuration["ConnectionStrings:AzureServiceBus"];
+
+// 2. Register ServiceBusClient with emulator options
+// builder.Services.AddSingleton(sp =>
+// {
+//     var options = new ServiceBusClientOptions
+//     {
+//         // Must use WebSockets to connect to the local emulator container
+//         TransportType = ServiceBusTransportType.AmqpWebSockets
+//     };
+
+//     return new ServiceBusClient(connectionString, options);
+// });
+
+
+// var clientOptions = new ServiceBusClientOptions
+// {
+//     TransportType = ServiceBusTransportType.AmqpWebSockets
+// };
+
+// // Fixes CS1061 by using the correct root-level callback property
+// clientOptions.CertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => 
+// {
+//     // For local emulator development, bypass certificate validation check
+//     return true; 
+// };
+
+builder.Services.AddAzureClients(clientBuilder =>
 {
-    options.AddDefaultPolicy(policy =>
-    {
-        policy.WithOrigins("http://localhost:4200")
-              .AllowAnyHeader()
-              .WithMethods("GET", "POST", "DELETE", "PATCH", "OPTIONS")
-              .WithExposedHeaders("Content-Disposition")
-              .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
-    });
+    // Fetch your connection string
+    var connectionString = builder.Configuration.GetConnectionString("AzureServiceBus");
+
+    clientBuilder.AddServiceBusClient(connectionString)
+        .ConfigureOptions(options =>
+        {
+            // The emulator only supports TCP, not WebSockets
+            options.TransportType = ServiceBusTransportType.AmqpTcp; 
+            
+            // Bypass SSL certificate check for local development
+            options.CustomEndpointAddress = new Uri("sb://localhost"); 
+        });
 });
 
 
 
 
-string connectionString = builder.Configuration.GetConnectionString("DefaultConnection")!;
-// Register IDbConnection as Scoped
-builder.Services.AddScoped<IDbConnection>(sp => new SqlConnection(connectionString));
-
-// Register DbInitializer as Scoped
-builder.Services.AddScoped<DbInitializer>();
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
-        };
-    });
 
 var app = builder.Build();
 
-// --- DATABASE INITIALIZATION BLOCK ---
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    try
-    {
-        var dbInitializer = services.GetRequiredService<DbInitializer>();
-        
-        // Use 'await' to prevent deadlocks
-        await dbInitializer.InitializeAsync();
-    }
-    catch (Exception ex)
-    {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while initializing the database.");
-    }
-}
-// -------------------------------------
-
+// 2. Configure HTTP Request Pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseDefaultFiles(); 
-app.UseRouting();
-app.UseAuthentication();
-app.UseStaticFiles();
+app.UseHttpsRedirection();
 
+// CORS must sit before Authentication/Authorization
 app.UseCors(); 
-app.UseRouting();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
-app.MapFallbackToFile("{*path:nonfile}", "index.html");
 
-// Run application
 app.Run();

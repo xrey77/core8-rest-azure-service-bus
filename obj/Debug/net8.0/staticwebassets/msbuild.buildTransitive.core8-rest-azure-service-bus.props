@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="../buildMultiTargeting/core8-rest-azure-service-bus.props" />
+</Project>

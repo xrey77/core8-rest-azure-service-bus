@@ -1,11 +1,13 @@
 // Controllers/UpdateUserController.cs
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using core8_rest_azure_service_bus.dto;
 using core8_rest_azure_service_bus.Services;
 using core8_rest_azure_service_bus.Helpers;
 
 namespace core8_rest_azure_service_bus.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("[controller]")]
     public class UpdateUserController: ControllerBase {

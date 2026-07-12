@@ -1,3 +1,4 @@
+// Controllers/LoginController.cs
 using  Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using core8_rest_azure_service_bus.dto;
@@ -16,26 +17,30 @@ namespace core8_rest_azure_service_bus.Controllers {
     [Route("[controller]")]
     public class LoginController: ControllerBase {
 
-        private readonly IAuthService authService;
-        private readonly ILogger<LoginController> logger;
-        private readonly IConfiguration configuration;  
+        private readonly IAuthService _authService;
+        private readonly ILogger<LoginController> _logger;
+        private readonly IConfiguration _configuration;  
+        private readonly IMessagePublisher _publisher;
 
-
-        public LoginController(IAuthService _authService, ILogger<LoginController> _logger, IConfiguration _configuration) {
-            authService = _authService;
-            logger = _logger;
-            configuration = _configuration;
+        public LoginController(
+            IAuthService authService, 
+            ILogger<LoginController> logger, 
+            IConfiguration configuration,
+            IMessagePublisher publisher
+            ) {
+            _authService = authService;
+            _logger = logger;
+            _configuration = configuration;
+            _publisher = publisher;
         }
 
         [HttpPost("/login")]
         public async Task<IActionResult> userLogin(LoginDto dto) {
 
             try {
-                var user = await authService.signin(dto);
-
-
+                var user = await _authService.signin(dto);
                 var tokenHandler = new JwtSecurityTokenHandler();
-                var key = Encoding.ASCII.GetBytes(configuration["Jwt:Key"]!);
+                var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Key"]!);
                 var tokenDescriptor = new SecurityTokenDescriptor
                 {
                     Subject = new ClaimsIdentity(new Claim[]
@@ -45,16 +50,14 @@ namespace core8_rest_azure_service_bus.Controllers {
                     }),
                     Expires = DateTime.UtcNow.AddHours(1),
                     SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
-                    Issuer = configuration["Jwt:Issuer"],
-                    Audience = configuration["Jwt:Audience"]
+                    Issuer = _configuration["Jwt:Issuer"],
+                    Audience = _configuration["Jwt:Audience"]
                 };
                 
                 var token = tokenHandler.CreateToken(tokenDescriptor);
                 var tokenString = tokenHandler.WriteToken(token);
 
-
-
-                return Ok( new {
+                var userMessage = new {
                     firstname = user.Firstname,
                     lastname = user.Lastname,
                     email = user.Email,
@@ -67,10 +70,14 @@ namespace core8_rest_azure_service_bus.Controllers {
                     qrcodeurl = user.Qrcodeurl,
                     token = tokenString,
                     message = "You have Logged-in successfully."
-                });
+                };
+
+                await _publisher.PublishAsync(userMessage, "UserLoggedIn");
+
+                return Ok(userMessage);
                 
             } catch(AppException ex) {
-                logger.LogWarning(ex, ex.Message);
+                _logger.LogWarning(ex, ex.Message);
                 return StatusCode(500, new { message = ex.Message});
             }
 
