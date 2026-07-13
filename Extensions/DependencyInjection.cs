@@ -5,9 +5,9 @@ using Microsoft.Data.SqlClient;
 using Microsoft.IdentityModel.Tokens;
 using System.Data;
 using System.Text;
-using Microsoft.Extensions.Azure;
-using Azure.Messaging.ServiceBus;
-using Azure.Identity;
+// using Microsoft.Extensions.Azure;
+// using Azure.Messaging.ServiceBus;
+// using Azure.Identity;
 using core8_rest_azure_service_bus.Services;
 
 namespace Microsoft.Extensions.DependencyInjection;
@@ -21,15 +21,15 @@ public static class DependencyInjection
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
 
-        string azure_connectionString = configuration.GetConnectionString("AzureServiceBus") 
-                    ?? throw new InvalidOperationException("Connection string 'AzureServiceBus' not found.");
+        // string azure_connectionString = configuration.GetConnectionString("AzureServiceBus") 
+        //             ?? throw new InvalidOperationException("Connection string 'AzureServiceBus' not found.");
 
     
         // 2. Register the Azure Service Bus Client
-        services.AddAzureClients(clientBuilder =>
-        {
-            clientBuilder.AddServiceBusClient(azure_connectionString);
-        });
+        // services.AddAzureClients(clientBuilder =>
+        // {
+        //     clientBuilder.AddServiceBusClient(azure_connectionString);
+        // });
 
 
 

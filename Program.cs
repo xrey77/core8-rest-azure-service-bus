@@ -16,63 +16,24 @@ builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddCustomCors();
 builder.Services.AddCustomAuthentication(builder.Configuration);
 
-// var options = new ServiceBusClientOptions
-// {
-//     TransportType = ServiceBusTransportType.AmqpWebSockets
-// };
-
-// string connectionString = builder.Configuration.GetConnectionString("AzureServiceBus")
-//                 ?? throw new ArgumentNullException(nameof(builder.Configuration), "Central topic name is missing.");
-
-// var client = new ServiceBusClient(connectionString, options);
-
-
-string connectionString = builder.Configuration.GetConnectionString("AzureServiceBus") 
+string serviceBusConnectionString = builder.Configuration.GetConnectionString("AzureServiceBus") 
     ?? throw new ArgumentNullException(nameof(builder.Configuration), "Unable to connect to AzureServiceBus.");
-    // ?? builder.Configuration["ConnectionStrings:AzureServiceBus"];
+// Console.WriteLine(connectionString);
 
-// 2. Register ServiceBusClient with emulator options
-// builder.Services.AddSingleton(sp =>
-// {
-//     var options = new ServiceBusClientOptions
-//     {
-//         // Must use WebSockets to connect to the local emulator container
-//         TransportType = ServiceBusTransportType.AmqpWebSockets
-//     };
-
-//     return new ServiceBusClient(connectionString, options);
-// });
-
-
-// var clientOptions = new ServiceBusClientOptions
-// {
-//     TransportType = ServiceBusTransportType.AmqpWebSockets
-// };
-
-// // Fixes CS1061 by using the correct root-level callback property
-// clientOptions.CertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => 
-// {
-//     // For local emulator development, bypass certificate validation check
-//     return true; 
-// };
-
+var topicName = builder.Configuration["ConnectionStrings:CentralTopicName"];
+Console.WriteLine(topicName);
 builder.Services.AddAzureClients(clientBuilder =>
 {
-    // Fetch your connection string
-    var connectionString = builder.Configuration.GetConnectionString("AzureServiceBus");
+    clientBuilder.AddServiceBusClient(serviceBusConnectionString);
 
-    clientBuilder.AddServiceBusClient(connectionString)
-        .ConfigureOptions(options =>
-        {
-            // The emulator only supports TCP, not WebSockets
-            options.TransportType = ServiceBusTransportType.AmqpTcp; 
-            
-            // Bypass SSL certificate check for local development
-            options.CustomEndpointAddress = new Uri("sb://localhost"); 
-        });
+    clientBuilder.AddClient<ServiceBusSender, ServiceBusClientOptions>((opts, provider) =>
+    {
+        var client = provider.GetRequiredService<ServiceBusClient>();
+        return client.CreateSender(topicName);
+    });
 });
 
-
+builder.Services.AddScoped<IMessagePublisher, ServiceBusPublisher>();
 
 
 

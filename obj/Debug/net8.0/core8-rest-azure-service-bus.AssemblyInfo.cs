@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("core8-rest-azure-service-bus")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9a7cd0825b49c9735b006e8b30e11a716605bd92")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c0490f69507ad2eba9bd3f2f0f2cb27c25f43c59")]
 [assembly: System.Reflection.AssemblyProductAttribute("core8-rest-azure-service-bus")]
 [assembly: System.Reflection.AssemblyTitleAttribute("core8-rest-azure-service-bus")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
