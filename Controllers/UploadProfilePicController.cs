@@ -9,24 +9,29 @@ using System.IO;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp;
 
-
 namespace core8_rest_azure_service_bus.Controllers
 {
     [Authorize]
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class UploadProfilePicController : ControllerBase
     {
 
-        private readonly IWebHostEnvironment env;
-        private readonly IUserService userService;
+        private readonly IWebHostEnvironment _env;
+        private readonly IUserService _userService;
+        private readonly IMessagePublisher _publisher;
 
-        public UploadProfilePicController(IUserService _userService, IWebHostEnvironment _env) {
-            userService = _userService;
-            env = _env;
+        public UploadProfilePicController(
+            IUserService userService,
+            IWebHostEnvironment env,
+            IMessagePublisher publisher
+            ) {
+            _userService = userService;
+            _env = env;
+            _publisher = publisher;
         }
 
-        [HttpPatch("/uploadprofilepic/{id}")]
+        [HttpPatch("{id}")]
         public async Task<IActionResult> uploadPicture(int id, UploadPicDto dto) {
 
             if (dto?.Userpic == null || dto.Userpic.Length == 0)
@@ -36,7 +41,7 @@ namespace core8_rest_azure_service_bus.Controllers
 
             try
             {
-                var folderName = Path.Combine(env.WebRootPath, "users");
+                var folderName = Path.Combine(_env.WebRootPath, "users");
                 if (!Directory.Exists(folderName))
                 {
                     Directory.CreateDirectory(folderName);
@@ -58,7 +63,8 @@ namespace core8_rest_azure_service_bus.Controllers
                 var baseUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}";
                 var fileUrl = $"{baseUrl}/users/{filename}";
 
-                await userService.UploadPicture(id, filename);
+                var userData = await _userService.UploadPicture(id, filename);
+                await _publisher.PublishAsync(userData, "UploadProfilePic");
 
                 return Ok(new { 
                     userpic = filename,

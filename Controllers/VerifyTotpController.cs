@@ -8,21 +8,29 @@ namespace core8_rest_azure_service_bus.Controllers
 {
     [Authorize]
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class VerifyTotpController : ControllerBase {
 
-        public readonly IMfaService mfaService;
+        private readonly IMfaService _mfaService;
+        private readonly IMessagePublisher _publisher;
 
-        public VerifyTotpController(IMfaService _mfaService) {
-            mfaService = _mfaService;
+        public VerifyTotpController(
+            IMfaService mfaService,
+            IMessagePublisher publisher
+            ) {
+            _mfaService = mfaService;
+            _publisher = publisher;
         }
 
-        [HttpPatch("/verifyotp/{id}")]
+        [HttpPatch("{id}")]
         public async Task<IActionResult> VerifyOtpCode(int id, VerifyOtpDto dto) {
             try {
-                await mfaService.VerifyOtp(id, dto);
-                return Ok(new {message = "OTP code has been verified successfully."});
-            } catch(AppException ex) {
+                var userData = await _mfaService.VerifyOtp(id, dto);
+                await _publisher.PublishAsync(userData, "VerifyTotp");
+                return Ok(new {
+                    username = userData.Username,
+                    message = "OTP code has been verified successfully."});
+            } catch(AppException ex) {                
                 return BadRequest(new { message = ex.Message});
             }
         }

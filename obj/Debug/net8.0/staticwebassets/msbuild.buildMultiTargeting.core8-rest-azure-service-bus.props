@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="../build/core8-rest-azure-service-bus.props" />
-</Project>

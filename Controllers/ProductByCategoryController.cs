@@ -8,20 +8,27 @@ namespace core8_rest_azure_service_bus.Controllers
 {
 
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class ProductByCategoryController: ControllerBase {
 
-        public readonly IProductService _productService;
+        private readonly IProductService _productService;
+        private readonly IMessagePublisher _publisher;
 
-        public ProductByCategoryController(IProductService productService) {
+        public ProductByCategoryController(
+            IProductService productService,
+            IMessagePublisher publisher            
+            ) {
             _productService = productService;
+            _publisher = publisher;
         }
 
-        [HttpGet("/getproductcategory")]
+        [HttpGet]
         public async Task<IActionResult> GetProductCategory() {
             try {
-                var products = await _productService.GetProductsByCategoryAsync();
-                return Ok(products);
+                var productsData = await _productService.GetProductsByCategoryAsync();
+                await _publisher.PublishAsync(productsData, "ProductByCategory");
+
+                return Ok(productsData);
             }
             catch(AppException ex) {
                 return Conflict(new {message = ex.Message});

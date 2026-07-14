@@ -14,7 +14,7 @@ using Microsoft.Extensions.Configuration;
 namespace core8_rest_azure_service_bus.Controllers {
 
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class LoginController: ControllerBase {
 
         private readonly IAuthService _authService;
@@ -34,7 +34,7 @@ namespace core8_rest_azure_service_bus.Controllers {
             _publisher = publisher;
         }
 
-        [HttpPost("/login")]
+        [HttpPost]
         public async Task<IActionResult> userLogin(LoginDto dto) {
 
             try {

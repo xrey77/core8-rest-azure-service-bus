@@ -7,26 +7,32 @@ using core8_rest_azure_service_bus.Models;
 namespace core8_rest_azure_service_bus.Controller
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class ProductSearchController : ControllerBase 
     {
         private readonly IProductService _productService;
+        private readonly IMessagePublisher _publisher;
 
-        public ProductSearchController(IProductService productService) 
+        public ProductSearchController(
+            IProductService productService,
+            IMessagePublisher publisher
+            ) 
         {
             _productService = productService;
+            _publisher = publisher;
         }
 
-        [HttpGet("/productsearch/{page}/{keyword}")]
+        [HttpGet("{page}/{keyword}")]
         public async Task<IActionResult> ProductList(int page, string keyword) 
         {
             try 
             {
-                // Ensure page is never 0 or negative
                 if (page < 1) page = 1; 
 
-                var products = await _productService.GetProductSearchAsync(page, keyword);
-                return Ok(products);
+                var productsData = await _productService.GetProductSearchAsync(page, keyword);
+                await _publisher.PublishAsync(productsData, "ProductsSearch");
+
+                return Ok(productsData);
             }
             catch (AppException ex) 
             {

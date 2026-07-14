@@ -8,21 +8,28 @@ namespace core8_rest_azure_service_bus.Controllers
 {
     [Authorize]
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class ChangePasswordController: ControllerBase {
 
-
+        private readonly IMessagePublisher _publisher;
         private readonly IUserService userService;
 
-        public ChangePasswordController(IUserService _userService) {
+        public ChangePasswordController(
+            IUserService _userService,
+            IMessagePublisher publisher
+        ) {
             userService = _userService;
+            _publisher = publisher;
+            
         }
 
-        [HttpPatch("/changepassword/{id}")]
+        [HttpPatch("{id}")]
         public async Task<IActionResult> changePassword(int id, ChangePasswordDto dto) {
 
             try {
-                await userService.ChangeUserPassword(id, dto);
+                var userData = await userService.ChangeUserPassword(id, dto);
+
+                await _publisher.PublishAsync(userData, "ChangePassword");
                 return Ok(
                     new { message = "You have changed you passord successfully." }
                 );

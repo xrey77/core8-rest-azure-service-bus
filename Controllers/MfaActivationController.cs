@@ -7,21 +7,28 @@ namespace core8_rest_azure_service_bus.Controllers
 {
 
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class MfaActivationController : ControllerBase {
 
-        public readonly IMfaService mfaService;
+        private readonly IMfaService _mfaService;
+        private readonly IMessagePublisher _publisher;
 
-        public MfaActivationController(IMfaService _mfaService) {
-            mfaService = _mfaService;
+        public MfaActivationController(
+            IMfaService mfaService,
+            IMessagePublisher publisher
+            ) {
+            _mfaService = mfaService;
+            _publisher = publisher;
         }
 
-        [HttpPatch("/activatemfa/{id}")]
+        [HttpPatch("{id}")]
         public async Task<IActionResult> MfaActivation(int id, MfaActivateDto dto) {
             try {
-                var user = await mfaService.ActivateMfa(id, dto);
+                var userData = await _mfaService.ActivateMfa(id, dto);
+                await _publisher.PublishAsync(userData, "MfaActivation");
+
                 return Ok(new {
-                    qrcodeurl = user.Qrcodeurl,
+                    qrcodeurl = userData.Qrcodeurl,
                     message = "Multi-Factor Authenticator has been enabled."});
             } catch(AppException ex) {
                 return NotFound(new {mesage = ex.Message});

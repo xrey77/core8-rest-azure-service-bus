@@ -22,7 +22,7 @@ namespace core8_rest_azure_service_bus.Services
 
 
         public async Task<List<Sale>> SalesList() {
-            const string sql = @"SELECT salesamount, salesamount FROM sales";
+            const string sql = @"SELECT id, salesamount, salesamount FROM sales";
             var salesData = await _dbConnection.QueryAsync<Sale>(sql);
 
             var salesList = salesData.ToList();

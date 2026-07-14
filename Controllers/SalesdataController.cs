@@ -9,20 +9,27 @@ using core8_rest_azure_service_bus.Services;
 namespace core8_rest_azure_service_bus.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
-    public class SaleController : ControllerBase 
+    [Route("api/[controller]")]
+    public class SalesdataController : ControllerBase 
     {
-        private readonly ISaleService _saleService; // Changed to private
+        private readonly ISaleService _saleService;
+        private readonly IMessagePublisher _publisher;
 
-        public SaleController(ISaleService saleService) {
+        public SalesdataController(
+            ISaleService saleService,
+            IMessagePublisher publisher
+            ) {
             _saleService = saleService;
+            _publisher = publisher;
         }
 
-        [HttpGet("/getsales")]
+        [HttpGet]
         public async Task<IActionResult> SalesList() {
             try {
-                var sales = await _saleService.SalesList();
-                return Ok(sales);
+                var salesData = await _saleService.SalesList();
+                await _publisher.PublishAsync(salesData, "SalesList");
+
+                return Ok(salesData);
             } catch(AppException ex) {
                 return NotFound(new { message = ex.Message});
             }

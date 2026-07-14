@@ -9,22 +9,30 @@ namespace core8_rest_azure_service_bus.Controllers
 {
     [Authorize]
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class UpdateUserController: ControllerBase {
 
         private readonly IUserService userService;
         private readonly ILogger<UpdateUserController> logger;
+        private readonly IMessagePublisher _publisher;
 
-        public UpdateUserController(IUserService _userService, ILogger<UpdateUserController> _logger) {
+        public UpdateUserController(
+            IUserService _userService,
+            ILogger<UpdateUserController> _logger,
+            IMessagePublisher publisher
+            ) {
             userService = _userService;
             logger = _logger;
+            _publisher = publisher;
         }
 
-        [HttpPatch("/updateuser/{id}")]
+        [HttpPatch("{id}")]
         public async Task<IActionResult> UpdateProfile(int id, [FromBody] UpdateUserDto dto) {
 
             try {
-                await userService.UpdateUserProfile(id, dto);
+                var userData = await userService.UpdateUserProfile(id, dto);
+                await _publisher.PublishAsync(userData, "UpdateProfile");
+
                 return Ok(new {
                     message = "You have updated you profile successfully."
                 });
