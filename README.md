@@ -12,7 +12,7 @@
 <p>9. SixLabors.ImageSharp Version 3.1.11</p>
 <p>10. System.IdentityModel.Tokens.Jwt Version 8.19.1</p>
 <p>11. System.Data.Common Version 4.3.0</p>
-<p>12. Azure Service Bus Emulator latest version</p>
+<p>12. Azure Service Bus Emulator latest version (docker)</p>
 <br/>
 
 <h4>Project Features</h4>
